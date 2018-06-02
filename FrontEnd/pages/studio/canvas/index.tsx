@@ -6,7 +6,7 @@ import { IChartOption, Controls, ChartType, ISeriesItemTemplate } from '@charts'
 import { IBeginDragResult as IDraggableChartPreivewResult } from '@container/draggable-chart-preview';
 import { IChartConfig, Chart } from '@components/chart';
 import { TransformTool, SideType, ITransformConfig } from '@container/transform-tool';
-import { MIN_SCALE_VALUE, MAX_SCALE_VALUE, IUpdateStudioState, NO_HIGHLIGHT_CHART, idMapIndexChart, IupdateGlobalSetting } from '@pages/studio';
+import { MIN_SCALE_VALUE, MAX_SCALE_VALUE, IUpdateStudioState, NO_HIGHLIGHT_CHART, idMapIndexChart, IUpdateGlobalSetting, IUpdateGlobalState, NO_CHOOSED_SPLITID } from '@pages/studio';
 import { IDraggableSplitResult } from '@container/draggable-split';
 import SplitContainer from '@container/split-container';
 
@@ -17,7 +17,8 @@ export interface ICanvasProps {
   canvasScale: number;
   charts: ReadonlyArray<IChartConfig>;
   colors: string[];
-  updateGlobalSetting: IupdateGlobalSetting;
+  updateGlobalSetting: IUpdateGlobalSetting;
+  updateGlobalState: IUpdateGlobalState;
   updateStudioState: IUpdateStudioState;
   splitContainer: 'none' | 'horizontal' | 'vertical';
   choosedChartIds: ReadonlyArray<number>;
@@ -112,9 +113,9 @@ export class RawCanvas extends React.Component<IRawCanvasProps, ICanvasState> {
       return;
     }
     if (e.ctrlKey === true) {
-      this.props.updateStudioState({ choosedChartIds: [...ids, id] });
+      this.props.updateGlobalState({ choosedChartIds: [...ids, id] });
     } else {
-      this.props.updateStudioState({ choosedChartIds: [id] });
+      this.props.updateGlobalState({ choosedChartIds: [id] });
     }
   }
 
@@ -281,17 +282,21 @@ export class RawCanvas extends React.Component<IRawCanvasProps, ICanvasState> {
       top: top + OFFSET_POSITION.top
     };
     const newChartId = this.appendChart(option, { seriesItemTemplate, controls, position, size, imgSrc, type });
-    this.props.updateStudioState({ choosedChartIds: [newChartId] });
+    this.props.updateGlobalState({ choosedChartIds: [newChartId] });
   }
 
   handleTrashcanClick(id: number) {
-    const { charts, updateStudioState } = this.props;
+    const { charts, updateStudioState, updateGlobalState } = this.props;
     const index = idMapIndexChart.get(id);
+
+    updateGlobalState({
+      choosedChartIds: []
+    });
+
     updateStudioState({
       charts: update(charts, {
         $splice: [[index, 1]]
-      }),
-      choosedChartIds: []
+      })
     });
   }
 
@@ -358,7 +363,7 @@ export class RawCanvas extends React.Component<IRawCanvasProps, ICanvasState> {
   }
 
   unmountSplitContainer() {
-    this.props.updateStudioState({ splitContainer: 'none' });
+    this.props.updateGlobalState({ splitContainer: 'none', choosedSplitId: NO_CHOOSED_SPLITID });
   }
 
   static getDerivedStateFromProps(nextProps: ICanvasProps) {
@@ -391,7 +396,7 @@ export class RawCanvas extends React.Component<IRawCanvasProps, ICanvasState> {
 
 
   render() {
-    const { size: { width, height }, canvasScale, connectDropTarget, updateStudioState,
+    const { size: { width, height }, canvasScale, connectDropTarget, updateStudioState, updateGlobalState,
       charts, highlightChartId, choosedChartIds, choosedSplitId, isBorder, splitContainer } = this.props;
 
     return connectDropTarget(
@@ -404,8 +409,9 @@ export class RawCanvas extends React.Component<IRawCanvasProps, ICanvasState> {
         <div className='canvas' ref={this.canvasRef}>
           {
             splitContainer !== 'none'
-            && <SplitContainer isBorder={isBorder} choosedSplitId={choosedSplitId} containerId={0} unmount={this.unmountSplitContainer} choosedChartIds={choosedChartIds} canvasScale={canvasScale} highlightChartId={highlightChartId} charts={charts}
-              updateStudioState={updateStudioState} mode={splitContainer} />
+            && <SplitContainer isBorder={isBorder} choosedSplitId={choosedSplitId} containerId={0}
+              unmount={this.unmountSplitContainer} choosedChartIds={choosedChartIds} canvasScale={canvasScale}
+              highlightChartId={highlightChartId} charts={charts} updateGlobalState={updateGlobalState} mode={splitContainer} />
           }
           {
             splitContainer === 'none'
@@ -450,7 +456,7 @@ const boxTarget = {
       }
 
       const item = monitor.getItem() as IDraggableSplitResult;
-      props.updateStudioState({
+      props.updateGlobalState({
         splitContainer: item.mode
       });
       return;

@@ -3,7 +3,7 @@ import update from 'immutability-helper';
 import { Panel, BorderType } from './panel';
 import { tree, INodeData, TreeNode } from './tree';
 import { Mode } from '@container/draggable-split';
-import { IUpdateStudioState, idMapIndexChart, NO_CHOOSED_SPLITID } from '@pages/studio';
+import { IUpdateGlobalState, idMapIndexChart, NO_CHOOSED_SPLITID } from '@pages/studio';
 import { IChartConfig } from '@components/chart';
 
 import './style.styl';
@@ -25,7 +25,7 @@ interface IState {
 interface IProps {
   mode: Mode | 'none';
   choosedChartIds: ReadonlyArray<number>;
-  updateStudioState: IUpdateStudioState;
+  updateGlobalState: IUpdateGlobalState;
   charts: ReadonlyArray<IChartConfig>;
   isBorder: boolean;
   unmount: () => void;
@@ -146,7 +146,7 @@ export default class SplitContainer extends React.Component<IProps, IState> {
   }
 
   recurseSplit(newCharts: IChartConfig[], func: any) {
-    const { charts, updateStudioState } = this.props;
+    const { charts, updateGlobalState } = this.props;
 
     let firshtChartIdx = idMapIndexChart.get(this.firstPanelId);
     let secondChartIdx = idMapIndexChart.get(this.secondPanelId);
@@ -165,7 +165,8 @@ export default class SplitContainer extends React.Component<IProps, IState> {
     this.secondContainerRef.current && this.secondContainerRef.current.recurseSplit(newCharts, func);
 
     if (!this.firstContainerRef.current && !this.secondContainerRef.current) {
-      updateStudioState({ charts: newCharts });
+      // TODO:CHART
+      // updateGlobalState({ charts: newCharts });
     }
   }
 
@@ -235,19 +236,20 @@ export default class SplitContainer extends React.Component<IProps, IState> {
   }
 
   appendChart(chart: IChartConfig) {
-    const { updateStudioState, charts } = this.props;
-    updateStudioState({
-      charts: update(charts, {
-        $push: [chart]
-      })
-    });
+    const { updateGlobalState, charts } = this.props;
+    // TODO:CHART
+    // updateGlobalState({
+    //   charts: update(charts, {
+    //     $push: [chart]
+    //   })
+    // });
   }
 
   handleContainerClick(e: React.MouseEvent<HTMLDivElement>) {
     e.stopPropagation();
 
-    const { updateStudioState, containerId } = this.props;
-    updateStudioState({
+    const { updateGlobalState, containerId } = this.props;
+    updateGlobalState({
       choosedChartIds: [],
       choosedSplitId: containerId
     });
@@ -255,7 +257,7 @@ export default class SplitContainer extends React.Component<IProps, IState> {
 
   handleChartClick(e: React.MouseEvent<HTMLDivElement>, id: number) {
     e.stopPropagation();
-    const { updateStudioState, choosedChartIds } = this.props;
+    const { updateGlobalState, choosedChartIds } = this.props;
     if (e.shiftKey) {
       return;
     }
@@ -264,22 +266,23 @@ export default class SplitContainer extends React.Component<IProps, IState> {
     if (e.ctrlKey) {
       newChoosedChartIds.push(...choosedChartIds);
     }
-    updateStudioState({
+    updateGlobalState({
       choosedChartIds: newChoosedChartIds,
       choosedSplitId: NO_CHOOSED_SPLITID
     });
   }
 
   handleChartTrashcanClick(id: number) {
-    const { updateStudioState, charts } = this.props;
+    const { updateGlobalState, charts } = this.props;
     const idx = idMapIndexChart.get(id);
     const newChart = [...charts.slice(0, idx), ...charts.slice(idx + 1)];
-    updateStudioState({ charts: newChart, choosedChartIds: [] });
+    // TODO:CHART
+    // updateGlobalState({ charts: newChart, choosedChartIds: [] });
   }
 
   handleTrashcanClick(e: React.MouseEvent<HTMLDivElement>) {
     e.stopPropagation();
-    const { containerId, charts, updateStudioState } = this.props;
+    const { containerId, charts, updateGlobalState } = this.props;
     const node = tree.getNodeById(tree.root, containerId);
     const childIds = tree.getNodeChildIds(node);
     const hasChart = charts.some((chart) => {
@@ -294,7 +297,7 @@ export default class SplitContainer extends React.Component<IProps, IState> {
     tree.deleteNode(node.firstChild);
     tree.deleteNode(node.secondChild);
 
-    updateStudioState({
+    updateGlobalState({
       choosedSplitId: NO_CHOOSED_SPLITID
     });
 
@@ -308,7 +311,7 @@ export default class SplitContainer extends React.Component<IProps, IState> {
   }
 
   render(): JSX.Element {
-    let { mode, updateStudioState, charts, highlightChartId, choosedChartIds, choosedSplitId, containerId, isBorder } = this.props;
+    let { mode, updateGlobalState, charts, highlightChartId, choosedChartIds, choosedSplitId, containerId, isBorder } = this.props;
     const { firstPanelSize, secondPanelSize, firstPanelMode, secondPanelMode,
       topDelta, leftDelta } = this.state;
 
@@ -377,7 +380,7 @@ export default class SplitContainer extends React.Component<IProps, IState> {
           {
             firstPanelMode !== 'none'
             && <SplitContainer isBorder={isBorder} choosedSplitId={choosedSplitId} containerId={this.firstPanelId} unmount={() => this.handleChildUnmout('first')} choosedChartIds={choosedChartIds} canvasScale={this.props.canvasScale}
-              ref={this.firstContainerRef} charts={charts} highlightChartId={highlightChartId} updateStudioState={updateStudioState} mode={firstPanelMode} />
+              ref={this.firstContainerRef} charts={charts} highlightChartId={highlightChartId} updateGlobalState={updateGlobalState} mode={firstPanelMode} />
           }
         </Panel>
         <MiddleLine style={middleStyle} onDown={this.handleMousDown} />
@@ -387,7 +390,7 @@ export default class SplitContainer extends React.Component<IProps, IState> {
           {
             secondPanelMode !== 'none'
             && <SplitContainer isBorder={isBorder} choosedSplitId={choosedSplitId} containerId={this.secondPanelId} unmount={() => this.handleChildUnmout('second')} choosedChartIds={choosedChartIds} canvasScale={this.props.canvasScale}
-              ref={this.secondContainerRef} charts={charts} highlightChartId={highlightChartId} updateStudioState={updateStudioState} mode={secondPanelMode} />
+              ref={this.secondContainerRef} charts={charts} highlightChartId={highlightChartId} updateGlobalState={updateGlobalState} mode={secondPanelMode} />
           }
         </Panel>
         {

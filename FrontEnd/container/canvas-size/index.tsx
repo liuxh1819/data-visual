@@ -1,12 +1,12 @@
 import * as React from 'react';
 import DoubleInput from '@components/double-input';
-import { IupdateGlobalSetting } from '@pages/studio';
+import { IUpdateGlobalSetting } from '@pages/studio';
 
 const Input = DoubleInput.Input;
 
 interface IProps {
   canvasSize: Base.Size;
-  updateGlobalSetting: IupdateGlobalSetting;
+  updateGlobalSetting: IUpdateGlobalSetting;
 }
 
 export default class CanvasSize extends React.Component<IProps, undefined> {

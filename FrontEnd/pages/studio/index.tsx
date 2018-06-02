@@ -22,24 +22,27 @@ export type ZoomType = 'width' | 'height' | 'full';
 
 export interface IStudioState {
   globalSettings: IGlobalSettings;
+  globalState: IGlobalState;
   charts: Charts;
-  splitContainer: 'none' | 'horizontal' | 'vertical';
-  choosedChartIds: ReadonlyArray<number>;
-  choosedSplitId: number;
-  highlightChartId: number;
 }
 
 export interface IUpdateStudioState {
   (state: Partial<IStudioState>, callback?: () => void): void;
 }
 
-export interface IupdateGlobalSetting {
+export interface IUpdateGlobalSetting {
   ({ ...globalSettings }: Partial<IGlobalSettings>): void;
+}
+
+export interface IUpdateGlobalState {
+  ({ ...globalState }: Partial<IGlobalState>): void;
 }
 
 interface IContextValue {
   globalSettings: IGlobalSettings;
-  updateGlobalSetting: IupdateGlobalSetting;
+  updateGlobalSetting: IUpdateGlobalSetting;
+  globalState: IGlobalState;
+  updateGlobalState: IUpdateGlobalState;
 }
 
 interface IGlobalState {
@@ -73,7 +76,14 @@ const DEFAULT_CONTEXT: IContextValue = {
     colors: ['#c23531', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83', '#ca8622', '#bda29a'],
     zoomType: 'width'
   },
-  updateGlobalSetting: () => { }
+  globalState: {
+    splitContainer: 'none',
+    choosedChartIds: [],
+    choosedSplitId: NO_CHOOSED_SPLITID,
+    highlightChartId: NO_HIGHLIGHT_CHART
+  },
+  updateGlobalSetting: () => { },
+  updateGlobalState: () => { }
 };
 
 export const Context: React.Context<IContextValue> = React.createContext(DEFAULT_CONTEXT);
@@ -88,6 +98,7 @@ class RawStudio extends React.Component<undefined, IStudioState> {
     this.updateCanvasPos = this.updateCanvasPos.bind(this);
     this.updateStudioState = this.updateStudioState.bind(this);
     this.updateGlobalSetting = this.updateGlobalSetting.bind(this);
+    this.updateGlobalState = this.updateGlobalState.bind(this);
     this.handleContentClick = this.handleContentClick.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
     this.deleteChoosedChart = this.deleteChoosedChart.bind(this);
@@ -99,11 +110,8 @@ class RawStudio extends React.Component<undefined, IStudioState> {
 
     this.state = {
       globalSettings: DEFAULT_CONTEXT.globalSettings,
-      highlightChartId: NO_HIGHLIGHT_CHART,
-      choosedSplitId: NO_CHOOSED_SPLITID,
-      splitContainer: 'none',
-      charts: [],
-      choosedChartIds: []
+      globalState: DEFAULT_CONTEXT.globalState,
+      charts: []
     };
   }
 
@@ -138,7 +146,6 @@ class RawStudio extends React.Component<undefined, IStudioState> {
   }
 
   updateGlobalSetting(globalSetting: Partial<IGlobalSettings>) {
-    // update(this.state.globalSettings, globalSetting);
     this.setState({
       globalSettings: update(this.state.globalSettings, {
         $merge: globalSetting
@@ -146,8 +153,16 @@ class RawStudio extends React.Component<undefined, IStudioState> {
     });
   }
 
+  updateGlobalState(globalState: Partial<IGlobalState>) {
+    this.setState({
+      globalState: update(this.state.globalState, {
+        $merge: globalState
+      })
+    });
+  }
+
   handleContentClick() {
-    this.updateStudioState({
+    this.updateGlobalState({
       choosedChartIds: [],
       choosedSplitId: NO_CHOOSED_SPLITID,
       highlightChartId: NO_HIGHLIGHT_CHART
@@ -176,7 +191,7 @@ class RawStudio extends React.Component<undefined, IStudioState> {
     if (key === 'delete') {
       this.deleteChoosedChart();
     }
-    if (this.state.splitContainer === 'none') {
+    if (this.state.globalState.splitContainer === 'none') {
       if (e.ctrlKey && key === 'c') {
         this.toChartsClipboard();
       }
@@ -187,10 +202,10 @@ class RawStudio extends React.Component<undefined, IStudioState> {
   }
 
   toChartsClipboard() {
-    if (this.state.choosedChartIds.length === 0)
+    const { globalState: { choosedChartIds }, charts } = this.state;
+    if (choosedChartIds.length === 0)
       return;
 
-    const { charts, choosedChartIds } = this.state;
     this.chartsClipboard = [];
 
     charts.forEach((chart, idx) => {
@@ -215,27 +230,31 @@ class RawStudio extends React.Component<undefined, IStudioState> {
       chartsClipboardCopyed[i].id = Date.now() + 1525010857275 + i;
     }
 
-    this.updateStudioState({
-      charts: update(this.state.charts, {
-        $push: chartsClipboardCopyed
-      }),
+    this.updateGlobalState({
       choosedChartIds: (() => {
         return chartsClipboardCopyed.map(({ id }) => {
           return id;
         });
       })()
     });
+
+    this.updateStudioState({
+      charts: update(this.state.charts, {
+        $push: chartsClipboardCopyed
+      })
+    });
   }
 
   deleteChoosedChart() {
-    if (this.state.choosedChartIds.length === 0)
+    const { charts, globalState: { choosedChartIds } } = this.state;
+    if (choosedChartIds.length === 0)
       return;
     let newCharts: IChartConfig[] = [];
-    const { charts, choosedChartIds } = this.state;
     charts.forEach((chart, idx) => {
       !choosedChartIds.includes(chart.id) && newCharts.push(chart);
     });
-    this.updateStudioState({ charts: newCharts, choosedChartIds: [] });
+    this.updateStudioState({ charts: newCharts });
+    this.updateGlobalState({ choosedChartIds: [] });
   }
 
   componentDidMount() {
@@ -254,12 +273,15 @@ class RawStudio extends React.Component<undefined, IStudioState> {
   }
 
   render() {
-    const { splitContainer, charts, choosedChartIds, highlightChartId, choosedSplitId, globalSettings } = this.state;
+    const { globalState, globalSettings, charts } = this.state;
     const { isBorder, zoomType, canvasSize, canvasScale, colors } = globalSettings;
+    const { splitContainer, choosedChartIds, highlightChartId, choosedSplitId } = globalState;
     return (
       <Context.Provider value={{
         globalSettings: globalSettings,
-        updateGlobalSetting: this.updateGlobalSetting
+        updateGlobalSetting: this.updateGlobalSetting,
+        globalState: globalState,
+        updateGlobalState: this.updateGlobalState
       }}>
         <Banner isBorder={isBorder} zoomType={zoomType} charts={charts} canvasSize={canvasSize} />
         <div className='studio'>
@@ -270,7 +292,7 @@ class RawStudio extends React.Component<undefined, IStudioState> {
             <div ref={this.contentRef} className='canvas_wrapper'>
               <Canvas
                 canvasScale={canvasScale} size={canvasSize} highlightChartId={highlightChartId} updateGlobalSetting={this.updateGlobalSetting}
-                charts={charts} updateStudioState={this.updateStudioState} choosedSplitId={choosedSplitId}
+                charts={charts} updateStudioState={this.updateStudioState} choosedSplitId={choosedSplitId} updateGlobalState={this.updateGlobalState}
                 choosedChartIds={choosedChartIds} colors={colors} isBorder={isBorder} splitContainer={splitContainer}>
               </Canvas>
             </div>

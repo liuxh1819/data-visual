@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Sidebar from '@base/sidebar';
-import Layer from '@pages/studio/layer';
+// import Layer from '@pages/studio/layer';
 import ComponentPanel from '@pages/studio/component-panel';
 import { Context as StudioContext } from '@pages/studio';
 

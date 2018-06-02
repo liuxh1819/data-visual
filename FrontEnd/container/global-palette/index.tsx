@@ -2,11 +2,11 @@ import * as React from 'react';
 import update from 'immutability-helper';
 import Loadable from '@hoc/loadable';
 import { IChartConfig } from '@components/chart';
-import { IupdateGlobalSetting } from '@pages/studio';
+import { IUpdateGlobalSetting } from '@pages/studio';
 
 interface IProps {
   colors: string[];
-  updateGlobalSetting: IupdateGlobalSetting;
+  updateGlobalSetting: IUpdateGlobalSetting;
 }
 
 const ColorInputGroup = Loadable(() => import('@components/color-input-group'));
