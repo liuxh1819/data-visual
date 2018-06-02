@@ -1,11 +1,12 @@
 import * as React from 'react';
 import Sidebar from '@base/sidebar';
 import GlobalSetting from '@pages/studio/global-setting';
-import ComSetting from '@pages/studio/com-setting';
+// import ComSetting from '@pages/studio/com-setting';
 import { Context as StudioContext } from '@pages/studio';
 
 import './style.styl';
 
+// TODO: ComSetting
 export default function () {
   return (
     <StudioContext.Consumer>
@@ -15,7 +16,7 @@ export default function () {
             <GlobalSetting />
           </Sidebar.Panel>
           <Sidebar.Panel title='组件设置'>
-            <ComSetting />
+            {/* <ComSetting /> */}
           </Sidebar.Panel>
         </Sidebar>
       )}
