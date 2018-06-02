@@ -6,21 +6,20 @@ import { Context as StudioContext } from '@pages/studio';
 
 import './style.styl';
 
-export default class LeftBar extends React.Component {
-  render() {
-    return (
-      <StudioContext.Consumer>
-        {({ updateCanvasPos, charts, updateStudioState, choosedChartIds }) => (
-          <Sidebar onOpenChangeAfter={() => updateCanvasPos()} className='leftbar' mode='left' width='200px' height='100%'>
-            <Sidebar.Panel className='component_panel' title='组件'>
-              <ComponentPanel />
-            </Sidebar.Panel>
-            <Sidebar.Panel className='layer_panel' title='图层'>
-              <Layer choosedChartIds={choosedChartIds} updateStudioState={updateStudioState} charts={charts} />
-            </Sidebar.Panel>
-          </Sidebar>
-        )}
-      </StudioContext.Consumer>
-    );
-  }
+interface IProps {
+  updateCanvasPos: () => void;
+}
+
+// TODO: Layer
+export default function LeftBar({ updateCanvasPos }: IProps) {
+  return (
+    <Sidebar onOpenChangeAfter={() => updateCanvasPos()} className='leftbar' mode='left' width='200px' height='100%'>
+      <Sidebar.Panel className='component_panel' title='组件'>
+        <ComponentPanel />
+      </Sidebar.Panel>
+      <Sidebar.Panel className='layer_panel' title='图层'>
+        {/* <Layer choosedChartIds={choosedChartIds} updateStudioState={updateStudioState} charts={charts} /> */}
+      </Sidebar.Panel>
+    </Sidebar>
+  );
 }

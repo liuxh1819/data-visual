@@ -111,7 +111,7 @@ export interface IChartPreview {
 
 export type ChartPreviewList = IChartPreview[];
 
-export let defaultColor = ['#c23531', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83', '#ca8622', '#bda29a'];
+// export let defaultColor = ['#c23531', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83', '#ca8622', '#bda29a'];
 
 export { pieList } from './pie';
 export { barList } from './bar';

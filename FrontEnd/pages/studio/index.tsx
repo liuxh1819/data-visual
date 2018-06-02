@@ -8,7 +8,6 @@ import { Canvas, OFFSET_POSITION } from '@pages/studio/canvas';
 import Setting from '@pages/studio/setting';
 import Banner from '@pages/studio/banner';
 import { IChartConfig } from '@components/chart';
-import { defaultColor } from '@charts';
 import './style.styl';
 
 export type CanvasPos = {
@@ -22,12 +21,8 @@ export type Charts = ReadonlyArray<IChartConfig>;
 export type ZoomType = 'width' | 'height' | 'full';
 
 export interface IStudioState {
-  canvasSize: Base.Size;
-  canvasScale: number;
+  globalSettings: IGlobalSettings;
   charts: Charts;
-  isBorder: boolean;
-  colors: string[];
-  zoomType: ZoomType;
   splitContainer: 'none' | 'horizontal' | 'vertical';
   choosedChartIds: ReadonlyArray<number>;
   choosedSplitId: number;
@@ -38,29 +33,50 @@ export interface IUpdateStudioState {
   (state: Partial<IStudioState>, callback?: () => void): void;
 }
 
-export interface IContextValue {
-  canvasSize: Base.Size;
-  charts: Charts;
-  colors: string[];
-  isBorder: boolean;
-  zoomType: ZoomType;
-  choosedChartIds: ReadonlyArray<number>;
-  updateCanvasPos: () => void;
-  updateStudioState: IUpdateStudioState;
+export interface IupdateGlobalSetting {
+  ({ ...globalSettings }: Partial<IGlobalSettings>): void;
 }
 
-const DEFAULT_CANVASSIZE: Base.Size = {
-  width: 800,
-  height: 600
-};
+interface IContextValue {
+  globalSettings: IGlobalSettings;
+  updateGlobalSetting: IupdateGlobalSetting;
+}
 
-const DEFAULT_CANVASSCALE = 1;
+interface IGlobalState {
+  splitContainer: 'none' | 'horizontal' | 'vertical';
+  choosedChartIds: ReadonlyArray<number>;
+  choosedSplitId: number;
+  highlightChartId: number;
+}
+
+interface IGlobalSettings {
+  canvasSize: Base.Size;
+  canvasScale: number;
+  isBorder: boolean;
+  colors: string[];
+  zoomType: ZoomType;
+}
+
+// const
 export const NO_HIGHLIGHT_CHART = -1;
 export const NO_CHOOSED_SPLITID = -1;
 export const MIN_SCALE_VALUE = 0.01;
 export const MAX_SCALE_VALUE = 10;
 
-export const Context: React.Context<IContextValue> = React.createContext({} as any);
+// default context's value
+
+const DEFAULT_CONTEXT: IContextValue = {
+  globalSettings: {
+    canvasSize: { width: 800, height: 600 },
+    canvasScale: 1,
+    isBorder: true,
+    colors: ['#c23531', '#2f4554', '#61a0a8', '#d48265', '#91c7ae', '#749f83', '#ca8622', '#bda29a'],
+    zoomType: 'width'
+  },
+  updateGlobalSetting: () => { }
+};
+
+export const Context: React.Context<IContextValue> = React.createContext(DEFAULT_CONTEXT);
 
 // chart'id map charts's index
 export const idMapIndexChart: Map<number, number> = new Map();
@@ -71,6 +87,7 @@ class RawStudio extends React.Component<undefined, IStudioState> {
     super(undefined);
     this.updateCanvasPos = this.updateCanvasPos.bind(this);
     this.updateStudioState = this.updateStudioState.bind(this);
+    this.updateGlobalSetting = this.updateGlobalSetting.bind(this);
     this.handleContentClick = this.handleContentClick.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
     this.deleteChoosedChart = this.deleteChoosedChart.bind(this);
@@ -81,28 +98,24 @@ class RawStudio extends React.Component<undefined, IStudioState> {
     this.handleSliderMinusClick = this.handleSliderMinusClick.bind(this);
 
     this.state = {
-      canvasSize: DEFAULT_CANVASSIZE,
-      canvasScale: DEFAULT_CANVASSCALE,
-      splitContainer: 'none',
-      colors: defaultColor,
-      charts: [],
-      isBorder: true,
-      zoomType: 'width',
-      choosedChartIds: [],
+      globalSettings: DEFAULT_CONTEXT.globalSettings,
       highlightChartId: NO_HIGHLIGHT_CHART,
-      choosedSplitId: NO_CHOOSED_SPLITID
+      choosedSplitId: NO_CHOOSED_SPLITID,
+      splitContainer: 'none',
+      charts: [],
+      choosedChartIds: []
     };
   }
 
   private contentRef: React.RefObject<HTMLDivElement> = React.createRef();
 
-  // Note: id maybe duplicated in chartsClipboard,
+  // Note: id maybe repeated in chartsClipboard,
   // so it will be re-assigned when copy
   private chartsClipboard: IChartConfig[] = [];
 
   updateCanvasPos() {
     const { width, height } = document.defaultView.getComputedStyle(this.contentRef.current, null);
-    const { canvasSize, canvasScale } = this.state;
+    const { canvasSize, canvasScale } = this.state.globalSettings;
     let canvasWidth = canvasSize.width * canvasScale,
       canvasHeight = canvasSize.height * canvasScale,
       paddingLeft = (parseFloat(width) - canvasWidth) / 2 + 'px',
@@ -124,6 +137,15 @@ class RawStudio extends React.Component<undefined, IStudioState> {
     this.setState({ ...state }, () => { typeof callback === 'function' && callback(); });
   }
 
+  updateGlobalSetting(globalSetting: Partial<IGlobalSettings>) {
+    // update(this.state.globalSettings, globalSetting);
+    this.setState({
+      globalSettings: update(this.state.globalSettings, {
+        $merge: globalSetting
+      })
+    });
+  }
+
   handleContentClick() {
     this.updateStudioState({
       choosedChartIds: [],
@@ -133,17 +155,17 @@ class RawStudio extends React.Component<undefined, IStudioState> {
   }
 
   handleSliderChange(value: number) {
-    this.updateStudioState({ canvasScale: value });
+    this.updateGlobalSetting({ canvasScale: value });
   }
 
   handleSliderPlusClick() {
-    let canvasScale = this.state.canvasScale;
-    this.updateStudioState({ canvasScale: canvasScale + 0.3 });
+    let canvasScale = this.state.globalSettings.canvasScale;
+    this.updateGlobalSetting({ canvasScale: canvasScale + 0.3 });
   }
 
   handleSliderMinusClick() {
-    let canvasScale = this.state.canvasScale;
-    this.updateStudioState({ canvasScale: canvasScale - 0.3 });
+    let canvasScale = this.state.globalSettings.canvasScale;
+    this.updateGlobalSetting({ canvasScale: canvasScale - 0.3 });
   }
 
   onKeyDown(e: KeyboardEvent) {
@@ -232,27 +254,22 @@ class RawStudio extends React.Component<undefined, IStudioState> {
   }
 
   render() {
-    const { splitContainer, canvasSize, zoomType, canvasScale, charts, choosedChartIds, highlightChartId, colors, choosedSplitId, isBorder } = this.state;
+    const { splitContainer, charts, choosedChartIds, highlightChartId, choosedSplitId, globalSettings } = this.state;
+    const { isBorder, zoomType, canvasSize, canvasScale, colors } = globalSettings;
     return (
       <Context.Provider value={{
-        canvasSize: this.state.canvasSize,
-        colors: this.state.colors,
-        charts: this.state.charts,
-        choosedChartIds: this.state.choosedChartIds,
-        updateCanvasPos: this.updateCanvasPos.bind(this),
-        updateStudioState: this.updateStudioState.bind(this),
-        isBorder: this.state.isBorder,
-        zoomType: this.state.zoomType
+        globalSettings: globalSettings,
+        updateGlobalSetting: this.updateGlobalSetting
       }}>
         <Banner isBorder={isBorder} zoomType={zoomType} charts={charts} canvasSize={canvasSize} />
         <div className='studio'>
           <div className='leftbar_container'>
-            <Leftbar />
+            <Leftbar updateCanvasPos={this.updateCanvasPos} />
           </div>
           <div className='st_content' onClick={this.handleContentClick}>
             <div ref={this.contentRef} className='canvas_wrapper'>
               <Canvas
-                canvasScale={canvasScale} size={canvasSize} highlightChartId={highlightChartId}
+                canvasScale={canvasScale} size={canvasSize} highlightChartId={highlightChartId} updateGlobalSetting={this.updateGlobalSetting}
                 charts={charts} updateStudioState={this.updateStudioState} choosedSplitId={choosedSplitId}
                 choosedChartIds={choosedChartIds} colors={colors} isBorder={isBorder} splitContainer={splitContainer}>
               </Canvas>
@@ -267,7 +284,7 @@ class RawStudio extends React.Component<undefined, IStudioState> {
             </div>
           </div>
           <div className='setting_container'>
-            <Setting />
+            <Setting updateCanvasPos={this.updateCanvasPos} />
           </div>
         </div>
       </Context.Provider>

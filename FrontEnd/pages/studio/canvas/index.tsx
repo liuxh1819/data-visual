@@ -6,7 +6,7 @@ import { IChartOption, Controls, ChartType, ISeriesItemTemplate } from '@charts'
 import { IBeginDragResult as IDraggableChartPreivewResult } from '@container/draggable-chart-preview';
 import { IChartConfig, Chart } from '@components/chart';
 import { TransformTool, SideType, ITransformConfig } from '@container/transform-tool';
-import { MIN_SCALE_VALUE, MAX_SCALE_VALUE, IUpdateStudioState, NO_HIGHLIGHT_CHART, idMapIndexChart } from '@pages/studio';
+import { MIN_SCALE_VALUE, MAX_SCALE_VALUE, IUpdateStudioState, NO_HIGHLIGHT_CHART, idMapIndexChart, IupdateGlobalSetting } from '@pages/studio';
 import { IDraggableSplitResult } from '@container/draggable-split';
 import SplitContainer from '@container/split-container';
 
@@ -17,6 +17,7 @@ export interface ICanvasProps {
   canvasScale: number;
   charts: ReadonlyArray<IChartConfig>;
   colors: string[];
+  updateGlobalSetting: IupdateGlobalSetting;
   updateStudioState: IUpdateStudioState;
   splitContainer: 'none' | 'horizontal' | 'vertical';
   choosedChartIds: ReadonlyArray<number>;
@@ -158,11 +159,11 @@ export class RawCanvas extends React.Component<IRawCanvasProps, ICanvasState> {
 
   handleCanvasWheel(e: React.WheelEvent<HTMLDivElement>) {
     e.preventDefault();
-    const { canvasScale, updateStudioState } = this.props;
+    const { canvasScale, updateGlobalSetting } = this.props;
     if (e.deltaY > 0) {
-      canvasScale >= MIN_SCALE_VALUE && updateStudioState({ canvasScale: canvasScale - 0.05 });
+      canvasScale >= MIN_SCALE_VALUE && updateGlobalSetting({ canvasScale: canvasScale - 0.05 });
     } else {
-      canvasScale <= MAX_SCALE_VALUE && updateStudioState({ canvasScale: canvasScale + 0.05 });
+      canvasScale <= MAX_SCALE_VALUE && updateGlobalSetting({ canvasScale: canvasScale + 0.05 });
     }
   }
 
